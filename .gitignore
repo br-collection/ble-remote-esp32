@@ -1,0 +1,13 @@
+# PlatformIO
+.pio/
+.vscode/*
+!.vscode/extensions.json
+
+# Eigene Werte und Befehle, nie committen
+include/config_local.h
+src/commands_local.cpp
+
+# Betriebssystem
+Thumbs.db
+desktop.ini
+.DS_Store
