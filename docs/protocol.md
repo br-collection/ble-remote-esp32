@@ -55,7 +55,7 @@ Ob ein HMAC erwartet wird, legt die Gegenstelle fest (Schlüssel gesetzt oder ni
 
 ## Grenzen der Gegenstelle
 
-- Nonce gültig 5 s, jede Nonce nur für einen Versuch
+- Nonce gültig 30 s, jede Nonce nur für einen Versuch (mit 5 s war die Uhr zu langsam: Zeitüberschreitung)
 - Verbindung wird nach 10 s oder nach 3 falschen HMACs getrennt
 - Nur eine Verbindung gleichzeitig
 

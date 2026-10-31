@@ -76,6 +76,7 @@ Before the first command it shows the boot counter and reset reason (e.g. `Start
 - **Brownouts:** the TZT board reset with BROWNOUT at full transmit power. A **22 µF** electrolytic capacitor between 3V and GND fixed it. 470 µF was too much: the OLED stayed dark after power-up.
 - **Range:** about 6 m line of sight with the on-board antenna, no connection through a wall. A board with an external 2.4 GHz antenna works noticeably better. Transmit power is set to +21 dBm (`BLE_TX_DBM`).
 - **Speed:** the Forerunner 945 switches the connection interval to 1000 ms shortly after connecting and rejects shorter ones. Reading the status then takes about 5 s, so the widget shows OK as soon as the write is acknowledged and reads the status in the background.
+- **Nonce lifetime:** with a key, the watch needs more than 5 s from connecting to writing the command. The nonce is therefore valid for 30 s (`NONCE_TTL_MS`); with 5 s every command ended in a timeout. Each nonce is still single-use.
 - **Device name:** the name is only in the scan response; the widget accepts devices without a name if the service UUID matches.
 - **OLED driver:** the TZT board uses an SH1106 whose glass starts at column 0, so the SSD1306 driver gives the correct picture (`OLED_DRIVER 0`).
 - **Finding the LED pin** on another board: set `LED_SEARCH 1`, every free pin blinks three times at startup and its number is shown on the OLED.

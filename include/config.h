@@ -46,7 +46,7 @@
 
 // ----- Zeiten --------------------------------------------------------
 #ifndef NONCE_TTL_MS
-#define NONCE_TTL_MS        5000   // Gültigkeit einer Nonce
+#define NONCE_TTL_MS        30000  // Gültigkeit einer Nonce; 5 s reichen der Uhr nicht
 #endif
 #ifndef SESSION_TIMEOUT_MS
 #define SESSION_TIMEOUT_MS 20000   // Verbindung wird danach getrennt (FR945: 1-s-Intervall)
