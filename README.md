@@ -1,48 +1,39 @@
-# BLE Remote – ESP32 firmware
+# BLE ESP32 Remote
 
-Counterpart for the Garmin Connect IQ widget **BLE ESP32 Remote Control**: the watch sends one of up to four commands over Bluetooth Low Energy, the ESP32 checks it and executes it (example: switch an LED on and off).
+Control an ESP32 from your Garmin watch: a Connect IQ widget sends one of up to four commands over Bluetooth Low Energy, the ESP32 checks it and executes it. The included example switches an LED on and off.
 
 ```
   Garmin watch (BLE central)                 ESP32 (BLE peripheral)
-  Connect IQ widget        ── read nonce ──►  this firmware
+  widget/                  ── read nonce ──►  firmware/
                            ── command+HMAC ►  checks, executes (LED, relay, ...)
                            ◄── status ─────
 ```
 
+- Up to four commands with your own names and optional payload.
 - Commands can be protected with a shared key: HMAC-SHA256 (truncated to 8 bytes) over a one-time nonce, so commands can be neither faked nor replayed.
-- Optional 1.3" OLED shows connection, last commands, counters and the reset reason.
-- Protocol: [docs/protocol.md](docs/protocol.md) (German), with test vectors.
-- Code comments are in German.
+- The widget connects as soon as it opens and keeps the connection, so a command does not have to scan and connect first.
+- Optional 1.3" OLED on the ESP32 shows the connection, last commands, counters and the reset reason.
 
-## Hardware
+## Contents
 
-Tested with an **ESP32-C3 development board with 1.3" OLED** (TZT, SH1106 at I2C 0x3C, ceramic antenna, USB-C directly at the C3). Any ESP32-C3 should work; without an OLED the diagnostics only go to the serial monitor.
-
-| Pin | Use on the TZT board |
+| Folder | Content |
 |---|---|
-| GPIO5 / GPIO6 | OLED SDA / SCL |
-| GPIO8 | blue on-board LED (lights at LOW), used by the example commands |
-| GPIO9 | BOOT button |
+| [`firmware/`](firmware) | ESP32-C3 firmware (PlatformIO, Arduino, NimBLE) |
+| [`widget/`](widget) | Garmin Connect IQ widget (Monkey C) |
+| [`docs/firmware.md`](docs/firmware.md) | hardware, build, configuration, own commands, OLED |
+| [`docs/widget.md`](docs/widget.md) | build, settings, usage, speed |
+| [`docs/connect-iq-setup.md`](docs/connect-iq-setup.md) | installing the Connect IQ tools |
+| [`docs/protocol.md`](docs/protocol.md) | GATT, frame, status codes, test vectors |
 
-Tested watch: Forerunner 945.
+## Quick start
 
-## Build and flash
+1. **Firmware:** open `firmware` with PlatformIO, build and upload to an ESP32-C3. Set `LED_PIN` and `LED_ON_HIGH` for your board, see [firmware.md](docs/firmware.md).
+2. **Widget:** open `widget` in VS Code with the Monkey C extension, run **Monkey C: Build for Device** and copy the `.prg` to `GARMIN/APPS` on the watch, see [widget.md](docs/widget.md).
+3. **Try it:** open the widget, press START, choose **LED On** or **LED Off**.
 
-1. Install VS Code with the PlatformIO extension.
-2. Open this folder, build and upload (`esp32c3-oled` environment).
-3. Serial monitor: 115200 baud (USB CDC).
+This works without a key, which is for testing only: anyone in range can then send commands.
 
-Bootloader mode if needed: hold BOOT, press RST, release BOOT.
-
-## Configuration
-
-All settings are in [include/config.h](include/config.h). Put your own values into `include/config_local.h` (ignored by git), it overrides the defaults. Template: [include/config_local.example.h](include/config_local.example.h).
-
-```c
-#define HMAC_KEY_HEX "…64 hex characters…"   // same key as in the widget
-#define LED_PIN 8
-#define LED_ON_HIGH 0
-```
+## Adding a key
 
 Generate a key:
 
@@ -50,37 +41,21 @@ Generate a key:
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Empty key = no security, for testing only (the OLED then shows `OFFEN!`).
+Enter the same value on both sides:
 
-In the widget settings (Garmin Connect app → device → Connect IQ apps → BLE Remote) enter the same key. Device name filter: `BLE-Remote`. The UUIDs must match `config.h`.
+- ESP32: `#define HMAC_KEY_HEX "..."` in `firmware/include/config_local.h` (ignored by git).
+- Widget: the setting "Key" in the Garmin Connect app, or the default `key` in `widget/resources/properties/properties.xml` if you sideload the widget. **Do not commit a real key.**
 
-## Own commands
+## Tested
 
-[src/commands.cpp](src/commands.cpp) contains the example: command 1 = LED on, command 2 = LED off. For your own actions either change that file, or write the same three functions (`commandsInit`, `commandExists`, `commandExecute`) in `src/commands_local.cpp`: the example functions are declared weak and are replaced automatically. `commands_local.cpp` is ignored by git.
-
-## OLED diagnostics
-
-```
-BLE-Remote        HMAC     name, security (OFFEN! = no key)
-Uhr dd:ee:ff        3s     connected watch, since when
-──────────────────────
-B2         OK      14s     newest command, inverted for 2 s
-B1         OK      33s
-OK 2 Fehl 0      0h10      counters, uptime
-```
-
-Before the first command it shows the boot counter and reset reason (e.g. `Start #12 STROM/1`). `BROWNOUT/9` means the supply dropped.
-
-## Notes from testing
-
-- **Brownouts:** the TZT board reset with BROWNOUT at full transmit power. A **22 µF** electrolytic capacitor between 3V and GND fixed it. 470 µF was too much: the OLED stayed dark after power-up.
-- **Range:** about 6 m line of sight with the on-board antenna, no connection through a wall. A board with an external 2.4 GHz antenna works noticeably better. Transmit power is set to +21 dBm (`BLE_TX_DBM`).
-- **Speed:** the Forerunner 945 switches the connection interval to 1000 ms shortly after connecting and rejects shorter ones. Reading the status then takes about 5 s, so the widget shows OK as soon as the write is acknowledged and reads the status in the background.
-- **Nonce lifetime:** with a key, the watch needs more than 5 s from connecting to writing the command. The nonce is therefore valid for 30 s (`NONCE_TTL_MS`); with 5 s every command ended in a timeout. Each nonce is still single-use.
-- **Device name:** the name is only in the scan response; the widget accepts devices without a name if the service UUID matches.
-- **OLED driver:** the TZT board uses an SH1106 whose glass starts at column 0, so the SSD1306 driver gives the correct picture (`OLED_DRIVER 0`).
-- **Finding the LED pin** on another board: set `LED_SEARCH 1`, every free pin blinks three times at startup and its number is shown on the OLED.
+| Part | Status |
+|---|---|
+| Forerunner 945 with an ESP32-C3 | commands with and without a key on the real watch |
+| Forerunner 55 | tests of the widget's own HMAC pass in the simulator |
+| Forerunner 945 LTE, vívoactive 4 / 4S | builds only |
 
 ## License
 
-[MIT](LICENSE)
+[PolyForm Noncommercial 1.0.0](LICENSE): anyone may use, change and republish this project for private and other noncommercial purposes. Keep the copyright notice when you pass it on. Commercial use is not covered; please ask first.
+
+Versions up to commit `5b31382` were published under the MIT license and stay available under it.

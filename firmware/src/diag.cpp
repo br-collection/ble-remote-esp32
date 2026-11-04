@@ -12,7 +12,7 @@
 
 using namespace proto;
 
-// ----- Ereignisse ----------------------------------------------------
+// ----- Events ----------------------------------------------------
 struct Event {
     uint32_t time;  // millis()
     uint8_t  cmd;
@@ -20,11 +20,11 @@ struct Event {
     uint8_t  len;
     uint8_t  payload[MAX_PAYLOAD];
 };
-static constexpr size_t LOG_SIZE = 3;  // passt auf das Display
+static constexpr size_t LOG_SIZE = 3;  // fits on the display
 
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 static Event    s_log[LOG_SIZE];
-static uint32_t s_logCount  = 0;  // gesamt, neuester Eintrag bei (s_logCount - 1) % LOG_SIZE
+static uint32_t s_logCount  = 0;  // total, newest entry at (s_logCount - 1) % LOG_SIZE
 static uint32_t s_okCount   = 0;
 static uint32_t s_errCount  = 0;
 static bool     s_connected = false;
@@ -37,15 +37,15 @@ static U8G2*    s_oled = nullptr;
 static int      s_sda = -1;
 static int      s_scl = -1;
 static uint32_t s_lastDraw = 0;
-static uint8_t  s_sent[128 * 64 / 8];  // zuletzt gesendetes Bild
-static char     s_bootInfo[24] = "";    // "Start #3 BROWNOUT"
+static uint8_t  s_sent[128 * 64 / 8];  // last image sent
+static char     s_bootInfo[24] = "";    // "Boot #3 BROWNOUT"
 
 static const char* resetText(esp_reset_reason_t r) {
     switch (r) {
-        case ESP_RST_POWERON:   return "STROM";
-        case ESP_RST_EXT:       return "RST-TASTE";
+        case ESP_RST_POWERON:   return "POWER";
+        case ESP_RST_EXT:       return "RST-BTN";
         case ESP_RST_SW:        return "SOFTWARE";
-        case ESP_RST_PANIC:     return "ABSTURZ";
+        case ESP_RST_PANIC:     return "PANIC";
         case ESP_RST_INT_WDT:
         case ESP_RST_TASK_WDT:
         case ESP_RST_WDT:       return "WATCHDOG";
@@ -55,7 +55,7 @@ static const char* resetText(esp_reset_reason_t r) {
     }
 }
 
-// Starts zählen und Grund merken: zeigt unerwartete Neustarts an
+// Count boots and remember the reason: reveals unexpected restarts
 static void countBoot() {
     Preferences prefs;
     prefs.begin("diag", false);
@@ -63,14 +63,14 @@ static void countBoot() {
     prefs.putUInt("boots", boots);
     prefs.end();
     esp_reset_reason_t r = esp_reset_reason();
-    snprintf(s_bootInfo, sizeof(s_bootInfo), "Start #%u %s/%d", (unsigned)boots, resetText(r), (int)r);
-    Serial.printf("%s (Reset-Grund %d)\n", s_bootInfo, (int)r);
+    snprintf(s_bootInfo, sizeof(s_bootInfo), "Boot #%u %s/%d", (unsigned)boots, resetText(r), (int)r);
+    Serial.printf("%s (reset reason %d)\n", s_bootInfo, (int)r);
 }
 
-static constexpr uint32_t REDRAW_MS    = 1000;  // Alter und Laufzeit aktualisieren
-static constexpr uint32_t HIGHLIGHT_MS = 2000;  // neuer Befehl invertiert
+static constexpr uint32_t REDRAW_MS    = 1000;  // update age and uptime
+static constexpr uint32_t HIGHLIGHT_MS = 2000;  // new command inverted
 
-// Antwortet an diesen Pins ein Display? Rückgabe I2C-Adresse oder 0.
+// Does a display answer on these pins? Returns the I2C address or 0.
 static uint8_t probe(int sda, int scl) {
     uint8_t found = 0;
     Wire.begin(sda, scl, 100000);
@@ -86,7 +86,7 @@ static uint8_t probe(int sda, int scl) {
     return found;
 }
 
-// Display-Pins suchen: gemerkte, dann übliche, dann alle Paare.
+// Find the display pins: remembered, then common, then all pairs.
 static uint8_t findDisplay(int& sda, int& scl) {
     Preferences prefs;
     prefs.begin("oled", false);
@@ -134,15 +134,15 @@ bool diagInit() {
         s_scl = OLED_SCL;
         addr = probe(s_sda, s_scl);
     } else {
-        Serial.println("Suche OLED ...");
+        Serial.println("Searching for OLED ...");
         addr = findDisplay(s_sda, s_scl);
     }
     if (!addr) {
-        Serial.println("Kein OLED gefunden, Diagnose nur seriell.");
+        Serial.println("No OLED found, diagnostics on serial only.");
         s_sda = s_scl = -1;
         return false;
     }
-    Serial.printf("OLED an SDA=%d SCL=%d, Adresse 0x%02X\n", s_sda, s_scl, addr);
+    Serial.printf("OLED at SDA=%d SCL=%d, address 0x%02X\n", s_sda, s_scl, addr);
 
 #if OLED_DRIVER == 1
     s_oled = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, U8X8_PIN_NONE, s_scl, s_sda);
@@ -153,14 +153,14 @@ bool diagInit() {
     s_oled->setBusClock(400000);
     s_oled->begin();
     s_oled->setFont(u8g2_font_6x10_tf);
-    s_oled->clearDisplay();               // ganzen Display-RAM löschen
+    s_oled->clearDisplay();               // clear the whole display RAM
     memset(s_sent, 0, sizeof(s_sent));
     return true;
 }
 
 bool diagPinUsed(int pin) { return pin >= 0 && (pin == s_sda || pin == s_scl); }
 
-// ----- Meldungen (aus BLE-Task oder loop()) --------------------------
+// ----- Reports (from the BLE task or loop()) --------------------------
 void diagConnected(const char* addr) {
     portENTER_CRITICAL(&s_mux);
     strncpy(s_peer, addr, sizeof(s_peer) - 1);
@@ -197,15 +197,15 @@ void diagCommand(uint8_t cmd, const uint8_t* payload, size_t len, uint8_t status
     portEXIT_CRITICAL(&s_mux);
 }
 
-// ----- Zeichnen ------------------------------------------------------
+// ----- Drawing ------------------------------------------------------
 static const char* statusText(uint8_t st) {
     switch (st) {
         case ST_OK:            return "OK";
         case ST_BAD_MAC:       return "MAC!";
         case ST_NONCE_INVALID: return "NONCE";
-        case ST_UNKNOWN_CMD:   return "UNBEK";
+        case ST_UNKNOWN_CMD:   return "UNKN";
         case ST_BAD_FORMAT:    return "FORMAT";
-        case ST_EXEC_FAILED:   return "FEHLER";
+        case ST_EXEC_FAILED:   return "FAILED";
         case ST_BUSY:          return "BUSY";
     }
     return "?";
@@ -249,33 +249,33 @@ static void draw() {
     U8G2& d = *s_oled;
     d.clearBuffer();
 
-    // Kopf: Name und Sicherheit
+    // Header: name and security
     d.drawStr(0, 8, DEVICE_NAME);
-    drawRight(d, 8, authEnabled() ? "HMAC" : "OFFEN!");
+    drawRight(d, 8, authEnabled() ? "HMAC" : "OPEN!");
 
-    // Verbindung (letzte 3 Byte der Adresse)
+    // Connection (last 3 bytes of the address)
     if (conn) {
         fmtAge(age, sizeof(age), now - connTime);
-        snprintf(line, sizeof(line), "Uhr %s", strlen(peer) > 9 ? peer + 9 : peer);
+        snprintf(line, sizeof(line), "Watch %s", strlen(peer) > 9 ? peer + 9 : peer);
         d.drawStr(0, 19, line);
         drawRight(d, 19, age);
     } else {
-        d.drawStr(0, 19, "Warte auf Uhr ...");
+        d.drawStr(0, 19, "Waiting for watch");
     }
     d.drawHLine(0, 22, 128);
 
-    // Letzte Befehle, neuester oben
+    // Last commands, newest on top
     size_t shown = count < LOG_SIZE ? count : LOG_SIZE;
     if (shown == 0) {
-        d.drawStr(0, 33, "Noch kein Befehl");
+        d.drawStr(0, 33, "No command yet");
         d.drawStr(0, 43, s_bootInfo);
     }
     for (size_t i = 0; i < shown; i++) {
         const Event& e = log[(count - 1 - i) % LOG_SIZE];
         int y = 33 + 10 * i;
 
-        // "B3 01F4AA+" : Befehl und bis zu 3 Byte Payload
-        int p = snprintf(line, sizeof(line), "B%u ", e.cmd);
+        // "C3 01F4AA+" : command and up to 3 payload bytes
+        int p = snprintf(line, sizeof(line), "C%u ", e.cmd);
         for (size_t k = 0; k < e.len && k < 3; k++) {
             p += snprintf(line + p, sizeof(line) - p, "%02X", e.payload[k]);
         }
@@ -293,14 +293,14 @@ static void draw() {
         d.setDrawColor(1);
     }
 
-    // Fuß: Zähler und Laufzeit
+    // Footer: counters and uptime
     unsigned up = now / 60000;
-    snprintf(line, sizeof(line), "OK %u Fehl %u", (unsigned)ok, (unsigned)err);
+    snprintf(line, sizeof(line), "OK %u Err %u", (unsigned)ok, (unsigned)err);
     d.drawStr(0, 63, line);
     snprintf(line, sizeof(line), "%uh%02u", up / 60, up % 60);
     drawRight(d, 63, line);
 
-    // Nur senden, wenn sich das Bild geändert hat (weniger I2C, kein Flackern)
+    // Only send if the image changed (less I2C, no flicker)
     const uint8_t* buf = d.getBufferPtr();
     if (memcmp(buf, s_sent, sizeof(s_sent)) != 0) {
         memcpy(s_sent, buf, sizeof(s_sent));
@@ -318,7 +318,7 @@ void diagShowText(const char* line1, const char* line2) {
     d.drawStr(0, 50, line2);
     d.setFont(u8g2_font_6x10_tf);
     d.sendBuffer();
-    memset(s_sent, 0, sizeof(s_sent));  // danach Diagnose neu senden
+    memset(s_sent, 0, sizeof(s_sent));  // send the diagnostics again afterwards
 }
 
 void diagLoop() {

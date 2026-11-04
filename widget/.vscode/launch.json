@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "monkeyc",
+            "request": "launch",
+            "name": "Simulator (choose watch)",
+            "stopAtLaunch": false,
+            "device": "${command:GetTargetDevice}"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+<properties>
+    <property id="key" type="string"></property>
+    <property id="nameFilter" type="string">BLE-Remote</property>
+    <property id="scanTimeout" type="number">10</property>
+    <property id="cmd1On" type="boolean">true</property>
+    <property id="cmd1Name" type="string">LED On</property>
+    <property id="cmd1Payload" type="string"></property>
+    <property id="cmd2On" type="boolean">true</property>
+    <property id="cmd2Name" type="string">LED Off</property>
+    <property id="cmd2Payload" type="string"></property>
+    <property id="cmd3On" type="boolean">false</property>
+    <property id="cmd3Name" type="string">Command 3</property>
+    <property id="cmd3Payload" type="string"></property>
+    <property id="cmd4On" type="boolean">false</property>
+    <property id="cmd4Name" type="string">Command 4</property>
+    <property id="cmd4Payload" type="string"></property>
+    <property id="uuidService" type="string">71ee1368-aa5d-414c-b29c-b4bf2587a044</property>
+    <property id="uuidNonce" type="string">4ca71f9b-9c77-43e4-9f3c-b4dd79231572</property>
+    <property id="uuidCommand" type="string">c311f60e-9476-457a-a8a9-ffbd7dbb81ff</property>
+    <property id="uuidStatus" type="string">e3ca5a0a-479c-4cc3-9c63-3f88b70b5edc</property>
+</properties>

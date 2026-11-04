@@ -20,7 +20,7 @@ bool authInit() {
     size_t n = strlen(hex);
     if (n == 0) {
         s_keyLen = 0;
-        return true;  // Sicherheit bewusst deaktiviert
+        return true;  // security deliberately disabled
     }
     if (n % 2 != 0 || n / 2 < 16 || n / 2 > sizeof(s_key)) return false;
 
@@ -53,7 +53,7 @@ bool authVerify(const uint8_t* nonce, size_t nonceLen,
     mbedtls_md_free(&ctx);
     if (rc != 0) return false;
 
-    // Zeitkonstanter Vergleich
+    // constant-time comparison
     uint8_t diff = 0;
     for (size_t i = 0; i < macLen; i++) diff |= (uint8_t)(full[i] ^ mac[i]);
     return diff == 0;

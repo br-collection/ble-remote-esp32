@@ -15,25 +15,25 @@
 
 using namespace proto;
 
-// ----- GATT-Objekte --------------------------------------------------
+// ----- GATT objects --------------------------------------------------
 static NimBLEServer*         s_server    = nullptr;
 static NimBLECharacteristic* s_nonceChr  = nullptr;
 static NimBLECharacteristic* s_statusChr = nullptr;
 
-// ----- Sitzung (nur eine Verbindung gleichzeitig) --------------------
+// ----- Session (only one connection at a time) --------------------
 static volatile bool     s_connected     = false;
 static volatile bool     s_disconnecting = false;
 static volatile uint16_t s_connHandle    = 0;
 static volatile uint32_t s_connectTime   = 0;
 static volatile uint8_t  s_failCount     = 0;
-static uint8_t           s_paramRequests = 0;  // Anforderungen kurzes Intervall
+static uint8_t           s_paramRequests = 0;  // requests for a short interval
 
-// Nonce wird nur im BLE-Host-Task verwendet
+// The nonce is only used in the BLE host task
 static uint8_t  s_nonce[NONCE_LEN];
 static bool     s_nonceValid = false;
 static uint32_t s_nonceTime  = 0;
 
-// ----- Übergabe BLE-Task -> loop() -----------------------------------
+// ----- Handover BLE task -> loop() -----------------------------------
 static portMUX_TYPE s_mux = portMUX_INITIALIZER_UNLOCKED;
 static bool    s_pending = false;
 static uint8_t s_pendingCmd = 0;
@@ -56,8 +56,8 @@ static void clearNonce() {
     s_nonceChr->setValue(zero, NONCE_LEN);
 }
 
-// Prüft einen empfangenen Frame. Bei Erfolg wird der Befehl an loop()
-// übergeben und ST_BUSY zurückgegeben.
+// Checks a received frame. On success the command is handed over to loop()
+// and ST_BUSY is returned.
 static uint8_t handleFrame(const uint8_t* d, size_t n) {
     bool busy;
     portENTER_CRITICAL(&s_mux);
@@ -80,7 +80,7 @@ static uint8_t handleFrame(const uint8_t* d, size_t n) {
         }
         bool ok = authVerify(s_nonce, NONCE_LEN, d, HEADER_LEN + payloadLen,
                              d + HEADER_LEN + payloadLen, MAC_LEN);
-        newNonce();  // jede Nonce gilt nur für einen Versuch
+        newNonce();  // each nonce is only valid for one attempt
         if (!ok) {
             s_failCount = s_failCount + 1;
             return ST_BAD_MAC;
@@ -104,7 +104,7 @@ static uint8_t handleFrame(const uint8_t* d, size_t n) {
 // ----- Callbacks -----------------------------------------------------
 class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* srv, NimBLEConnInfo& info) override {
-        if (s_connected) {  // nur eine Verbindung zulassen
+        if (s_connected) {  // allow only one connection
             srv->disconnect(info.getConnHandle());
             return;
         }
@@ -117,18 +117,18 @@ class ServerCallbacks : public NimBLEServerCallbacks {
         setStatus(ST_NO_COMMAND);
         std::string addr = info.getAddress().toString();
         diagConnected(addr.c_str());
-        Serial.printf("Verbunden: %s, Intervall %.1f ms\n", addr.c_str(),
+        Serial.printf("Connected: %s, interval %.1f ms\n", addr.c_str(),
                       info.getConnInterval() * 1.25f);
-        // Kurzes Verbindungsintervall anfordern: jeder Lese-/Schreibvorgang
-        // wartet auf das nächste Intervall. Die Uhr darf ablehnen.
+        // Request a short connection interval: every read or write
+        // waits for the next interval. The watch may refuse.
         s_paramRequests = 0;
         requestFastInterval(info.getConnHandle());
     }
 
-    // Die FR945 stellt kurz nach dem Verbinden auf 1000 ms um: dann erneut
-    // anfordern, begrenzt, damit es kein Hin und Her ohne Ende gibt.
+    // The FR945 switches to 1000 ms shortly after connecting: request again,
+    // but limited, so there is no endless back and forth.
     void onConnParamsUpdate(NimBLEConnInfo& info) override {
-        Serial.printf("Intervall jetzt %.1f ms\n", info.getConnInterval() * 1.25f);
+        Serial.printf("Interval now %.1f ms\n", info.getConnInterval() * 1.25f);
         if (info.getConnInterval() > CONN_INTERVAL_MAX && s_paramRequests < CONN_PARAM_RETRIES) {
             requestFastInterval(info.getConnHandle());
         }
@@ -145,7 +145,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
         s_connected = false;
         clearNonce();
         diagDisconnected();
-        Serial.printf("Getrennt (Grund %d)\n", reason);
+        Serial.printf("Disconnected (reason %d)\n", reason);
     }
 };
 
@@ -155,18 +155,18 @@ class CommandCallbacks : public NimBLECharacteristicCallbacks {
         uint8_t st = handleFrame(v.data(), v.length());
         setStatus(st);
         if (st != ST_BUSY) {
-            // abgelehnt: Befehl anzeigen, Payload nicht (Länge mit/ohne HMAC unklar)
+            // rejected: show the command, not the payload (length with/without HMAC unclear)
             diagCommand(v.length() >= HEADER_LEN ? v.data()[1] : 0, nullptr, 0, st);
-            Serial.printf("Befehl abgelehnt, Status 0x%02X\n", st);
+            Serial.printf("Command rejected, status 0x%02X\n", st);
         }
     }
 };
 
-// ----- Öffentliche Funktionen ----------------------------------------
+// ----- Public functions ----------------------------------------
 void bleInit() {
     NimBLEDevice::init(DEVICE_NAME);
     NimBLEDevice::setPower(BLE_TX_DBM);
-    Serial.printf("Sendeleistung %d dBm\n", NimBLEDevice::getPower());
+    Serial.printf("Transmit power %d dBm\n", NimBLEDevice::getPower());
     s_server = NimBLEDevice::createServer();
     s_server->setCallbacks(new ServerCallbacks());
     s_server->advertiseOnDisconnect(true);
@@ -176,13 +176,13 @@ void bleInit() {
     NimBLECharacteristic* cmdChr =
         svc->createCharacteristic(COMMAND_UUID, NIMBLE_PROPERTY::WRITE);
     s_statusChr = svc->createCharacteristic(STATUS_UUID, NIMBLE_PROPERTY::READ);
-    cmdChr->setCallbacks(new CommandCallbacks());  // Service startet mit dem Server (NimBLE 2.x)
+    cmdChr->setCallbacks(new CommandCallbacks());  // the service starts with the server (NimBLE 2.x)
 
     clearNonce();
     setStatus(ST_NO_COMMAND);
 
-    // Service-UUID im Advertising, Name in der Scan-Response
-    // (beides zusammen passt nicht in 31 Byte)
+    // Service UUID in the advertising data, name in the scan response
+    // (both together do not fit into 31 bytes)
     NimBLEAdvertisementData advData;
     advData.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
     advData.addServiceUUID(NimBLEUUID(SERVICE_UUID));
@@ -200,7 +200,7 @@ void bleInit() {
 }
 
 void bleLoop() {
-    // Anstehenden Befehl ausführen
+    // Execute a pending command
     bool    have = false;
     uint8_t cmd = 0;
     uint8_t payload[MAX_PAYLOAD];
@@ -216,7 +216,7 @@ void bleLoop() {
     portEXIT_CRITICAL(&s_mux);
 
     if (have) {
-        Serial.printf("Fuehre Befehl %u aus\n", cmd);
+        Serial.printf("Executing command %u\n", cmd);
         bool ok = commandExecute(cmd, payload, len);
         setStatus(ok ? ST_OK : ST_EXEC_FAILED);
         diagCommand(cmd, payload, len, ok ? ST_OK : ST_EXEC_FAILED);
@@ -225,14 +225,14 @@ void bleLoop() {
         portEXIT_CRITICAL(&s_mux);
     }
 
-    // Verbindung trennen bei Zeitüberschreitung oder zu vielen Fehlversuchen
+    // Disconnect on timeout or too many failed attempts
     if (s_connected && !s_disconnecting) {
         bool timeout  = (millis() - s_connectTime) > SESSION_TIMEOUT_MS;
         bool tooMany  = s_failCount >= MAX_FAILED_ATTEMPTS;
         if (timeout || tooMany) {
             s_disconnecting = true;
-            Serial.println(timeout ? "Sitzung abgelaufen, trenne"
-                                   : "Zu viele Fehlversuche, trenne");
+            Serial.println(timeout ? "Session expired, disconnecting"
+                                   : "Too many failed attempts, disconnecting");
             s_server->disconnect(s_connHandle);
         }
     }

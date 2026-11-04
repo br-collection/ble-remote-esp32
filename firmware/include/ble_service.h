@@ -2,10 +2,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Protokoll Version 1 – Details siehe docs/ble-remote-protokoll.md
+// Protocol version 1, details in docs/protocol.md
 namespace proto {
 constexpr uint8_t VERSION     = 0x01;
-constexpr size_t  HEADER_LEN  = 2;   // Version + Befehl
+constexpr size_t  HEADER_LEN  = 2;   // version + command
 constexpr size_t  NONCE_LEN   = 8;
 constexpr size_t  MAC_LEN     = 8;
 constexpr size_t  MAX_PAYLOAD = 10;
@@ -18,10 +18,10 @@ enum Status : uint8_t {
     ST_UNKNOWN_CMD   = 0x03,
     ST_BAD_FORMAT    = 0x04,
     ST_EXEC_FAILED   = 0x05,
-    ST_BUSY          = 0x06,  // Befehl angenommen, Ausführung läuft
-    ST_NO_COMMAND    = 0xFF   // in dieser Verbindung noch kein Befehl
+    ST_BUSY          = 0x06,  // command accepted, execution running
+    ST_NO_COMMAND    = 0xFF   // no command yet on this connection
 };
 }  // namespace proto
 
 void bleInit();
-void bleLoop();  // in loop() aufrufen
+void bleLoop();  // call from loop()

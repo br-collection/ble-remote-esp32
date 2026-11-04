@@ -1,78 +1,78 @@
-# BLE-Remote – Protokoll Version 1
+# BLE Remote: protocol version 1
 
-Garmin-Uhr (BLE-Central) sendet einen von 4 Befehlen an eine Gegenstelle
-(BLE-Peripheral, z. B. ESP32). Alle Bytes in Hex, Mehrbyte-Werte Big Endian.
-Übersicht: [README](../README.md).
+A Garmin watch (BLE central) sends one of 4 commands to a peripheral (e.g. an ESP32). All bytes in hex, multi-byte values big endian. Overview: [README](../README.md).
 
 ## GATT
 
-| Characteristic | Eigenschaft | Inhalt |
+| Characteristic | Property | Content |
 |---|---|---|
-| Nonce   | Read  | 8 Byte Zufallswert, neu bei jeder Verbindung und nach jedem Befehlsversuch |
-| Command | Write (mit Response) | Befehls-Frame, max. 20 Byte |
-| Status  | Read  | 1 Byte Ergebniscode |
+| Nonce   | Read  | 8 random bytes, new on every connection and after every command attempt |
+| Command | Write (with response) | command frame, max. 20 bytes |
+| Status  | Read  | 1 byte result code |
 
-Standard-UUIDs (in `config.h` und im Widget änderbar):
+Default UUIDs (can be changed in `firmware/include/config.h` and in the widget):
 
 - Service: `71ee1368-aa5d-414c-b29c-b4bf2587a044`
 - Nonce:   `4ca71f9b-9c77-43e4-9f3c-b4dd79231572`
 - Command: `c311f60e-9476-457a-a8a9-ffbd7dbb81ff`
 - Status:  `e3ca5a0a-479c-4cc3-9c63-3f88b70b5edc`
 
-Advertising enthält die Service-UUID, der Gerätename steht in der Scan-Response.
+The advertising data contains the service UUID, the device name is in the scan response.
 
 ## Frame
 
-Mit Schlüssel:  `[Version][Befehl][Payload 0–10 B][HMAC 8 B]`
-Ohne Schlüssel: `[Version][Befehl][Payload 0–10 B]`
+With a key: `[version][command][payload 0-10 bytes][HMAC 8 bytes]`
+
+Without a key: `[version][command][payload 0-10 bytes]`
 
 - Version: `01`
-- Befehl: `01`–`04`
-- HMAC: die ersten 8 Byte von HMAC-SHA256(Schlüssel, Nonce ‖ Version ‖ Befehl ‖ Payload)
+- Command: `01`-`04`
+- HMAC: the first 8 bytes of HMAC-SHA256(key, nonce ‖ version ‖ command ‖ payload)
 
-Ob ein HMAC erwartet wird, legt die Gegenstelle fest (Schlüssel gesetzt oder nicht).
+The peripheral decides whether an HMAC is expected (key set or not).
 
-## Ablauf
+## Sequence
 
-1. Scannen nach Service-UUID, verbinden
-2. Nonce lesen (nur mit Schlüssel nötig)
-3. Frame auf Command schreiben
-4. Status lesen; solange `06`, nach ca. 200 ms erneut lesen
-5. Trennen
+1. Scan for the service UUID, connect
+2. Read the nonce (only needed with a key)
+3. Write the frame to Command
+4. Read Status; while it is `06` or `FF`, read again shortly after
 
-## Statuscodes
+One connection can carry several commands: read a new nonce before each one. The widget does steps 1 and 2 in advance, as soon as it opens and after each command, so a selected command only has to write. See [widget.md](widget.md#speed).
 
-| Code | Bedeutung |
+## Status codes
+
+| Code | Meaning |
 |---|---|
-| `00` | OK, ausgeführt |
-| `01` | HMAC falsch |
-| `02` | Nonce fehlt oder abgelaufen (Nonce neu lesen) |
-| `03` | unbekannter Befehl |
-| `04` | Format falsch |
-| `05` | Ausführung fehlgeschlagen |
-| `06` | angenommen, Ausführung läuft |
-| `FF` | in dieser Verbindung noch kein Befehl |
+| `00` | OK, executed |
+| `01` | wrong HMAC |
+| `02` | nonce missing or expired (read a new nonce) |
+| `03` | unknown command |
+| `04` | invalid format |
+| `05` | execution failed |
+| `06` | accepted, execution running |
+| `FF` | no command yet on this connection |
 
-## Grenzen der Gegenstelle
+## Limits of the firmware
 
-- Nonce gültig 30 s, jede Nonce nur für einen Versuch (mit 5 s war die Uhr zu langsam: Zeitüberschreitung)
-- Verbindung wird nach 10 s oder nach 3 falschen HMACs getrennt
-- Nur eine Verbindung gleichzeitig
+- A nonce is valid for 30 s and for one attempt only (with 5 s the watch was too slow and every command ended in a timeout)
+- The connection is dropped 20 s after connecting, or after 3 wrong HMACs
+- Only one connection at a time
 
-## Testvektoren
+## Test vectors
 
-Schlüssel: `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`
+Key: `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`
+
 Nonce: `0102030405060708`
 
-| Version, Befehl, Payload | HMAC (8 B) | kompletter Frame |
+| Version, command, payload | HMAC (8 bytes) | Complete frame |
 |---|---|---|
 | `01 01` | `d1c00d0155cd7d1d` | `0101d1c00d0155cd7d1d` |
 | `01 03 01f4` | `a6546bfa5e0db430` | `010301f4a6546bfa5e0db430` |
 
-## Test mit nRF Connect (ohne Schlüssel)
+## Test with nRF Connect (without a key)
 
-1. In `config.h` `HMAC_KEY_HEX ""` lassen, flashen, seriellen Monitor öffnen (115200 Baud)
-2. In nRF Connect nach „BLE-Remote“ scannen und verbinden
-3. Auf Command schreiben (Byte Array): `0101` → LED ein, `0102` → LED aus
-   (Belegung der Firmware in `src/commands.cpp`)
-4. Status lesen: `00` = OK
+1. Leave `HMAC_KEY_HEX` empty, flash, open the serial monitor (115200 baud)
+2. In nRF Connect, scan for "BLE-Remote" and connect
+3. Write to Command (byte array): `0101` = LED on, `0102` = LED off (commands of the firmware: `firmware/src/commands.cpp`)
+4. Read Status: `00` = OK

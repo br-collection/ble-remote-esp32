@@ -1,0 +1,40 @@
+<strings>
+    <string id="AppName">BLE-Remote</string>
+    <string id="Hint1">START / tap:</string>
+    <string id="Hint2">open commands</string>
+    <string id="NoCommands">No command enabled</string>
+    <string id="ConfigError">Invalid setting:</string>
+    <string id="RestartHint1">UUIDs changed.</string>
+    <string id="RestartHint2">Reopen widget.</string>
+    <string id="PhaseScan">Searching...</string>
+    <string id="PhaseConnect">Connecting...</string>
+    <string id="PhaseSend">Sending...</string>
+    <string id="ResOk">OK</string>
+    <string id="ResNotFound">Device not found</string>
+    <string id="ResConnect">Connection failed</string>
+    <string id="ResBadKey">Wrong key</string>
+    <string id="ResUnknownCmd">Unknown command</string>
+    <string id="ResBadFormat">Format error</string>
+    <string id="ResExec">Execution failed</string>
+    <string id="ResTimeout">Timeout</string>
+    <string id="ResBle">BLE error</string>
+    <string id="SetKey">Key (hex, empty = no security)</string>
+    <string id="SetNameFilter">Device name filter (empty = off)</string>
+    <string id="SetScanTimeout">Scan timeout (s)</string>
+    <string id="SetUuidService">Service UUID</string>
+    <string id="SetUuidNonce">Nonce UUID</string>
+    <string id="SetUuidCommand">Command UUID</string>
+    <string id="SetUuidStatus">Status UUID</string>
+    <string id="SetCmd1On">Command 1 enabled</string>
+    <string id="SetCmd1Name">Command 1 name</string>
+    <string id="SetCmd1Payload">Command 1 payload (hex, max 10 bytes)</string>
+    <string id="SetCmd2On">Command 2 enabled</string>
+    <string id="SetCmd2Name">Command 2 name</string>
+    <string id="SetCmd2Payload">Command 2 payload (hex, max 10 bytes)</string>
+    <string id="SetCmd3On">Command 3 enabled</string>
+    <string id="SetCmd3Name">Command 3 name</string>
+    <string id="SetCmd3Payload">Command 3 payload (hex, max 10 bytes)</string>
+    <string id="SetCmd4On">Command 4 enabled</string>
+    <string id="SetCmd4Name">Command 4 name</string>
+    <string id="SetCmd4Payload">Command 4 payload (hex, max 10 bytes)</string>
+</strings>

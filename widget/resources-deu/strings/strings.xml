@@ -1,0 +1,40 @@
+<strings>
+    <string id="AppName">BLE-Remote</string>
+    <string id="Hint1">START / Tippen:</string>
+    <string id="Hint2">Befehle öffnen</string>
+    <string id="NoCommands">Kein Befehl aktiv</string>
+    <string id="ConfigError">Einstellung ungültig:</string>
+    <string id="RestartHint1">UUIDs geändert.</string>
+    <string id="RestartHint2">Widget neu öffnen.</string>
+    <string id="PhaseScan">Suche ...</string>
+    <string id="PhaseConnect">Verbinde ...</string>
+    <string id="PhaseSend">Sende ...</string>
+    <string id="ResOk">OK</string>
+    <string id="ResNotFound">Gerät nicht gefunden</string>
+    <string id="ResConnect">Verbindung fehlgeschlagen</string>
+    <string id="ResBadKey">Schlüssel falsch</string>
+    <string id="ResUnknownCmd">Befehl unbekannt</string>
+    <string id="ResBadFormat">Formatfehler</string>
+    <string id="ResExec">Ausführung fehlgeschlagen</string>
+    <string id="ResTimeout">Zeitüberschreitung</string>
+    <string id="ResBle">BLE-Fehler</string>
+    <string id="SetKey">Schlüssel (Hex, leer = ohne Sicherheit)</string>
+    <string id="SetNameFilter">Gerätename-Filter (leer = aus)</string>
+    <string id="SetScanTimeout">Scan-Timeout (s)</string>
+    <string id="SetUuidService">Service-UUID</string>
+    <string id="SetUuidNonce">Nonce-UUID</string>
+    <string id="SetUuidCommand">Command-UUID</string>
+    <string id="SetUuidStatus">Status-UUID</string>
+    <string id="SetCmd1On">Befehl 1 aktiv</string>
+    <string id="SetCmd1Name">Befehl 1 Name</string>
+    <string id="SetCmd1Payload">Befehl 1 Payload (Hex, max. 10 Byte)</string>
+    <string id="SetCmd2On">Befehl 2 aktiv</string>
+    <string id="SetCmd2Name">Befehl 2 Name</string>
+    <string id="SetCmd2Payload">Befehl 2 Payload (Hex, max. 10 Byte)</string>
+    <string id="SetCmd3On">Befehl 3 aktiv</string>
+    <string id="SetCmd3Name">Befehl 3 Name</string>
+    <string id="SetCmd3Payload">Befehl 3 Payload (Hex, max. 10 Byte)</string>
+    <string id="SetCmd4On">Befehl 4 aktiv</string>
+    <string id="SetCmd4Name">Befehl 4 Name</string>
+    <string id="SetCmd4Payload">Befehl 4 Payload (Hex, max. 10 Byte)</string>
+</strings>

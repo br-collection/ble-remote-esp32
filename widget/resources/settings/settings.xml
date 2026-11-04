@@ -1,0 +1,59 @@
+<settings>
+    <setting propertyKey="@Properties.key" title="@Strings.SetKey">
+        <settingConfig type="alphaNumeric" maxLength="160"/>
+    </setting>
+    <setting propertyKey="@Properties.nameFilter" title="@Strings.SetNameFilter">
+        <settingConfig type="alphaNumeric" maxLength="29"/>
+    </setting>
+    <setting propertyKey="@Properties.scanTimeout" title="@Strings.SetScanTimeout">
+        <settingConfig type="numeric" min="3" max="30"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd1On" title="@Strings.SetCmd1On">
+        <settingConfig type="boolean"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd1Name" title="@Strings.SetCmd1Name">
+        <settingConfig type="alphaNumeric" maxLength="24"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd1Payload" title="@Strings.SetCmd1Payload">
+        <settingConfig type="alphaNumeric" maxLength="40"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd2On" title="@Strings.SetCmd2On">
+        <settingConfig type="boolean"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd2Name" title="@Strings.SetCmd2Name">
+        <settingConfig type="alphaNumeric" maxLength="24"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd2Payload" title="@Strings.SetCmd2Payload">
+        <settingConfig type="alphaNumeric" maxLength="40"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd3On" title="@Strings.SetCmd3On">
+        <settingConfig type="boolean"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd3Name" title="@Strings.SetCmd3Name">
+        <settingConfig type="alphaNumeric" maxLength="24"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd3Payload" title="@Strings.SetCmd3Payload">
+        <settingConfig type="alphaNumeric" maxLength="40"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd4On" title="@Strings.SetCmd4On">
+        <settingConfig type="boolean"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd4Name" title="@Strings.SetCmd4Name">
+        <settingConfig type="alphaNumeric" maxLength="24"/>
+    </setting>
+    <setting propertyKey="@Properties.cmd4Payload" title="@Strings.SetCmd4Payload">
+        <settingConfig type="alphaNumeric" maxLength="40"/>
+    </setting>
+    <setting propertyKey="@Properties.uuidService" title="@Strings.SetUuidService">
+        <settingConfig type="alphaNumeric" maxLength="36"/>
+    </setting>
+    <setting propertyKey="@Properties.uuidNonce" title="@Strings.SetUuidNonce">
+        <settingConfig type="alphaNumeric" maxLength="36"/>
+    </setting>
+    <setting propertyKey="@Properties.uuidCommand" title="@Strings.SetUuidCommand">
+        <settingConfig type="alphaNumeric" maxLength="36"/>
+    </setting>
+    <setting propertyKey="@Properties.uuidStatus" title="@Strings.SetUuidStatus">
+        <settingConfig type="alphaNumeric" maxLength="36"/>
+    </setting>
+</settings>

@@ -1,13 +1,25 @@
 # PlatformIO
 .pio/
-.vscode/*
-!.vscode/extensions.json
 
-# Eigene Werte und Befehle, nie committen
-include/config_local.h
-src/commands_local.cpp
+# VS Code: local paths, keep only the shared files
+**/.vscode/*
+!**/.vscode/extensions.json
+!**/.vscode/launch.json
 
-# Betriebssystem
+# Own values and commands, never commit
+**/include/config_local.h
+**/src/commands_local.cpp
+
+# Connect IQ: build output and developer key
+**/bin/
+*.prg
+*.prg.debug.xml
+*.iq
+*.der
+*.pem
+keys/
+
+# Operating system
 Thumbs.db
 desktop.ini
 .DS_Store

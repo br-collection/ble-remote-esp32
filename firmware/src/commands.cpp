@@ -1,14 +1,14 @@
 // =====================================================================
-//  Beispiel-Aktionen: Befehl 1 = LED ein, Befehl 2 = LED aus.
-//  Befehl 1-4 entsprechen den Menüeinträgen im Widget.
+//  Example actions: command 1 = LED on, command 2 = LED off.
+//  Commands 1-4 are the menu entries in the widget.
 //
-//  Eigene Aktionen: entweder hier ändern, oder dieselben drei Funktionen
-//  in einer eigenen Datei (z. B. src/commands_local.cpp) schreiben. Die
-//  Funktionen hier sind "weak" und werden dann automatisch ersetzt.
-//  payload enthält die im Widget eingetragenen Bytes (0-10 Byte).
+//  Your own actions: either change them here, or write the same three functions
+//  in a file of your own (e.g. src/commands_local.cpp). The
+//  functions here are "weak" and are then replaced automatically.
+//  payload holds the bytes entered in the widget (0-10 bytes).
 //
-//  Läuft in loop(): kurze Wartezeiten sind ok, die Uhr fragt den Status
-//  so lange ab, bis die Ausführung fertig ist (Timeout im Widget beachten).
+//  Runs in loop(): short delays are fine, the watch polls the status
+//  until execution has finished (mind the timeout in the widget).
 // =====================================================================
 #include "commands.h"
 
@@ -17,19 +17,19 @@
 #include "config.h"
 #include "diag.h"
 
-// false, wenn das OLED den Pin belegt (Befehl meldet dann "FEHLER")
+// false if the OLED uses the pin (the command then reports "FAILED")
 static bool s_ledOk = false;
 
 static void setLed(bool on) { digitalWrite(LED_PIN, on == LED_ON_HIGH ? HIGH : LOW); }
 
-// Freie Pins nacheinander blinken lassen (LED_SEARCH)
+// Blink the free pins one after the other (LED_SEARCH)
 static void ledSearch() {
     static const int8_t pins[] = {0, 1, 2, 3, 4, 7, 8, 10, 20, 21};
     char buf[12];
     for (int8_t p : pins) {
         if (diagPinUsed(p)) continue;
         snprintf(buf, sizeof(buf), "GPIO %d", p);
-        diagShowText("LED-Suche", buf);
+        diagShowText("LED search", buf);
         pinMode(p, OUTPUT);
         for (int i = 0; i < 3; i++) {
             digitalWrite(p, HIGH);
@@ -51,7 +51,7 @@ __attribute__((weak)) void commandsInit() {
         pinMode(LED_PIN, OUTPUT);
         setLed(false);
     } else {
-        Serial.printf("WARNUNG: LED_PIN %d belegt das OLED, LED gesperrt\n", LED_PIN);
+        Serial.printf("WARNING: LED_PIN %d is used by the OLED, LED disabled\n", LED_PIN);
     }
 }
 
@@ -60,11 +60,11 @@ __attribute__((weak)) bool commandExists(uint8_t cmd) { return cmd >= 1 && cmd <
 __attribute__((weak)) bool commandExecute(uint8_t cmd, const uint8_t* payload, size_t len) {
     if (!s_ledOk) return false;
     switch (cmd) {
-        case 1:  // LED ein (Payload wird nicht gebraucht)
+        case 1:  // LED on (payload not needed)
             setLed(true);
             return true;
 
-        case 2:  // LED aus
+        case 2:  // LED off
             setLed(false);
             return true;
     }
